@@ -43,6 +43,9 @@ endif
 ifndef BUILD_RENDERER_OPENGL2
   BUILD_RENDERER_OPENGL2=
 endif
+ifndef BUILD_RENDERER_METAL
+  BUILD_RENDERER_METAL=
+endif
 ifndef BUILD_AUTOUPDATER  # DON'T build unless you mean to!
   BUILD_AUTOUPDATER=0
 endif
@@ -256,6 +259,7 @@ SDIR=$(MOUNT_DIR)/server
 RCOMMONDIR=$(MOUNT_DIR)/renderercommon
 RGL1DIR=$(MOUNT_DIR)/renderergl1
 RGL2DIR=$(MOUNT_DIR)/renderergl2
+RMETDIR=$(MOUNT_DIR)/renderermetal
 CMDIR=$(MOUNT_DIR)/qcommon
 SDLDIR=$(MOUNT_DIR)/sdl
 ASMDIR=$(MOUNT_DIR)/asm
@@ -1052,11 +1056,17 @@ ifneq ($(BUILD_CLIENT),0)
     ifneq ($(BUILD_RENDERER_OPENGL2),0)
       TARGETS += $(B)/renderer_opengl2_$(SHLIBNAME)
     endif
+    ifneq ($(BUILD_RENDERER_METAL),0)
+	    TARGETS += $(B)/renderer_metal_$(SHLIBNAME)
+	  endif
   else
     TARGETS += $(B)/$(CLIENTBIN)$(FULLBINEXT)
     ifneq ($(BUILD_RENDERER_OPENGL2),0)
       TARGETS += $(B)/$(CLIENTBIN)_opengl2$(FULLBINEXT)
     endif
+    ifneq ($(BUILD_RENDERER_METAL),0)
+      TARGETS += $(B)/$(CLIENTBIN)_metal$(FULLBINEXT)
+	endif
   endif
 endif
 
@@ -1484,6 +1494,7 @@ makedirs:
 	@$(MKDIR) $(B)/renderergl1
 	@$(MKDIR) $(B)/renderergl2
 	@$(MKDIR) $(B)/renderergl2/glsl
+	@$(MKDIR) $(B)/renderermetal
 	@$(MKDIR) $(B)/ded
 	@$(MKDIR) $(B)/$(BASEGAME)/cgame
 	@$(MKDIR) $(B)/$(BASEGAME)/game
@@ -1833,6 +1844,9 @@ else
   Q3OBJ += \
     $(B)/client/con_tty.o
 endif
+
+Q3RMOBJ = \
+  $(B)/renderermetal/tr_main.o
 
 Q3R2OBJ = \
   $(B)/renderergl2/tr_animation.o \
@@ -2263,6 +2277,11 @@ $(B)/renderer_opengl2_$(SHLIBNAME): $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) \
 		$(THREAD_LIBS) $(LIBSDLMAIN) $(RENDERER_LIBS) $(LIBS)
+
+$(B)/renderer_metal_$(SHLIBNAME): $(Q3RMOBJ) $(JPGOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RMOBJ) $(JPGOBJ) \
+		$(THREAD_LIBS) $(LIBSDLMAIN) $(RENDERER_LIBS) $(LIBS)
 else
 $(B)/$(CLIENTBIN)$(FULLBINEXT): $(Q3OBJ) $(Q3ROBJ) $(JPGOBJ) $(LIBSDLMAIN)
 	$(echo_cmd) "LD $@"
@@ -2274,6 +2293,12 @@ $(B)/$(CLIENTBIN)_opengl2$(FULLBINEXT): $(Q3OBJ) $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(J
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
 		-o $@ $(Q3OBJ) $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) \
+		$(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
+
+$(B)/$(CLIENTBIN)_metal$(FULLBINEXT): $(Q3OBJ) $(Q3RMOBJ) $(JPGOBJ) $(LIBSDLMAIN)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
+		-o $@ $(Q3OBJ) $(Q3RMOBJ) $(JPGOBJ) \
 		$(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
 endif
 
@@ -2804,6 +2829,12 @@ $(B)/renderergl2/%.o: $(RCOMMONDIR)/%.c
 $(B)/renderergl2/%.o: $(RGL2DIR)/%.c
 	$(DO_REF_CC)
 
+$(B)/renderermetal/%.o: $(RCOMMONDIR)/%.c
+	$(DO_REF_CC)
+
+$(B)/renderermetal/%.o: $(RMETDIR)/%.c
+	$(DO_REF_CC)
+
 
 $(B)/ded/%.o: $(ASMDIR)/%.s
 	$(DO_AS)
@@ -2953,9 +2984,15 @@ ifneq ($(BUILD_CLIENT),0)
     ifneq ($(BUILD_RENDERER_OPENGL2),0)
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/renderer_opengl2_$(SHLIBNAME) $(COPYBINDIR)/renderer_opengl2_$(SHLIBNAME)
     endif
+    ifneq ($(BUILD_RENDERER_METAL),0)
+	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/renderer_metal_$(SHLIBNAME) $(COPYBINDIR)/renderer_metal_$(SHLIBNAME)
+    endif
   else
     ifneq ($(BUILD_RENDERER_OPENGL2),0)
 	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/$(CLIENTBIN)_opengl2$(FULLBINEXT) $(COPYBINDIR)/$(CLIENTBIN)_opengl2$(FULLBINEXT)
+    endif
+    ifneq ($(BUILD_RENDERER_METAL),0)
+	$(INSTALL) $(STRIP_FLAG) -m 0755 $(BR)/$(CLIENTBIN)_metal$(FULLBINEXT) $(COPYBINDIR)/$(CLIENTBIN)_metal$(FULLBINEXT)
     endif
   endif
 endif
