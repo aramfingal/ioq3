@@ -1057,7 +1057,7 @@ ifneq ($(BUILD_CLIENT),0)
       TARGETS += $(B)/renderer_opengl2_$(SHLIBNAME)
     endif
     ifneq ($(BUILD_RENDERER_METAL),0)
-	    TARGETS += $(B)/renderer_metal_$(SHLIBNAME)
+      TARGETS += $(B)/renderer_metal_$(SHLIBNAME)
 	  endif
   else
     TARGETS += $(B)/$(CLIENTBIN)$(FULLBINEXT)
@@ -1495,6 +1495,7 @@ makedirs:
 	@$(MKDIR) $(B)/renderergl2
 	@$(MKDIR) $(B)/renderergl2/glsl
 	@$(MKDIR) $(B)/renderermetal
+	@$(MKDIR) $(B)/renderermetal/glsl
 	@$(MKDIR) $(B)/ded
 	@$(MKDIR) $(B)/$(BASEGAME)/cgame
 	@$(MKDIR) $(B)/$(BASEGAME)/game
@@ -1846,7 +1847,46 @@ else
 endif
 
 Q3RMOBJ = \
-  $(B)/renderermetal/tr_main.o
+  $(B)/renderermetal/tr_animation.o \
+  $(B)/renderermetal/tr_backend.o \
+  $(B)/renderermetal/tr_bsp.o \
+  $(B)/renderermetal/tr_cmds.o \
+  $(B)/renderermetal/tr_curve.o \
+  $(B)/renderermetal/tr_dsa.o \
+  $(B)/renderermetal/tr_extramath.o \
+  $(B)/renderermetal/tr_extensions.o \
+  $(B)/renderermetal/tr_fbo.o \
+  $(B)/renderermetal/tr_flares.o \
+  $(B)/renderermetal/tr_font.o \
+  $(B)/renderermetal/tr_glsl.o \
+  $(B)/renderermetal/tr_image.o \
+  $(B)/renderermetal/tr_image_bmp.o \
+  $(B)/renderermetal/tr_image_jpg.o \
+  $(B)/renderermetal/tr_image_pcx.o \
+  $(B)/renderermetal/tr_image_png.o \
+  $(B)/renderermetal/tr_image_tga.o \
+  $(B)/renderermetal/tr_image_dds.o \
+  $(B)/renderermetal/tr_init.o \
+  $(B)/renderermetal/tr_light.o \
+  $(B)/renderermetal/tr_main.o \
+  $(B)/renderermetal/tr_marks.o \
+  $(B)/renderermetal/tr_mesh.o \
+  $(B)/renderermetal/tr_model.o \
+  $(B)/renderermetal/tr_model_iqm.o \
+  $(B)/renderermetal/tr_noise.o \
+  $(B)/renderermetal/tr_postprocess.o \
+  $(B)/renderermetal/tr_scene.o \
+  $(B)/renderermetal/tr_shade.o \
+  $(B)/renderermetal/tr_shade_calc.o \
+  $(B)/renderermetal/tr_shader.o \
+  $(B)/renderermetal/tr_shadows.o \
+  $(B)/renderermetal/tr_sky.o \
+  $(B)/renderermetal/tr_surface.o \
+  $(B)/renderermetal/tr_vbo.o \
+  $(B)/renderermetal/tr_world.o \
+  \
+  $(B)/renderergl1/sdl_gamma.o \
+  $(B)/renderergl1/sdl_glimp.o
 
 Q3R2OBJ = \
   $(B)/renderergl2/tr_animation.o \
@@ -1889,6 +1929,36 @@ Q3R2OBJ = \
   \
   $(B)/renderergl1/sdl_gamma.o \
   $(B)/renderergl1/sdl_glimp.o
+
+Q3RMSTRINGOBJ = \
+  $(B)/renderermetal/glsl/bokeh_fp.o \
+  $(B)/renderermetal/glsl/bokeh_vp.o \
+  $(B)/renderermetal/glsl/calclevels4x_fp.o \
+  $(B)/renderermetal/glsl/calclevels4x_vp.o \
+  $(B)/renderermetal/glsl/depthblur_fp.o \
+  $(B)/renderermetal/glsl/depthblur_vp.o \
+  $(B)/renderermetal/glsl/dlight_fp.o \
+  $(B)/renderermetal/glsl/dlight_vp.o \
+  $(B)/renderermetal/glsl/down4x_fp.o \
+  $(B)/renderermetal/glsl/down4x_vp.o \
+  $(B)/renderermetal/glsl/fogpass_fp.o \
+  $(B)/renderermetal/glsl/fogpass_vp.o \
+  $(B)/renderermetal/glsl/generic_fp.o \
+  $(B)/renderermetal/glsl/generic_vp.o \
+  $(B)/renderermetal/glsl/lightall_fp.o \
+  $(B)/renderermetal/glsl/lightall_vp.o \
+  $(B)/renderermetal/glsl/pshadow_fp.o \
+  $(B)/renderermetal/glsl/pshadow_vp.o \
+  $(B)/renderermetal/glsl/shadowfill_fp.o \
+  $(B)/renderermetal/glsl/shadowfill_vp.o \
+  $(B)/renderermetal/glsl/shadowmask_fp.o \
+  $(B)/renderermetal/glsl/shadowmask_vp.o \
+  $(B)/renderermetal/glsl/ssao_fp.o \
+  $(B)/renderermetal/glsl/ssao_vp.o \
+  $(B)/renderermetal/glsl/texturecolor_fp.o \
+  $(B)/renderermetal/glsl/texturecolor_vp.o \
+  $(B)/renderermetal/glsl/tonemap_fp.o \
+  $(B)/renderermetal/glsl/tonemap_vp.o
 
 Q3R2STRINGOBJ = \
   $(B)/renderergl2/glsl/bokeh_fp.o \
@@ -1963,6 +2033,12 @@ ifneq ($(USE_RENDERER_DLOPEN), 0)
     $(B)/renderergl1/tr_subs.o
 
   Q3R2OBJ += \
+    $(B)/renderergl1/q_shared.o \
+    $(B)/renderergl1/puff.o \
+    $(B)/renderergl1/q_math.o \
+    $(B)/renderergl1/tr_subs.o
+
+  Q3RMOBJ += \
     $(B)/renderergl1/q_shared.o \
     $(B)/renderergl1/puff.o \
     $(B)/renderergl1/q_math.o \
@@ -2278,9 +2354,9 @@ $(B)/renderer_opengl2_$(SHLIBNAME): $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ)
 	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) \
 		$(THREAD_LIBS) $(LIBSDLMAIN) $(RENDERER_LIBS) $(LIBS)
 
-$(B)/renderer_metal_$(SHLIBNAME): $(Q3RMOBJ) $(JPGOBJ)
+$(B)/renderer_metal_$(SHLIBNAME): $(Q3RMOBJ) $(Q3RMSTRINGOBJ) $(JPGOBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RMOBJ) $(JPGOBJ) \
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(Q3RMOBJ) $(Q3RMSTRINGOBJ) $(JPGOBJ) \
 		$(THREAD_LIBS) $(LIBSDLMAIN) $(RENDERER_LIBS) $(LIBS)
 else
 $(B)/$(CLIENTBIN)$(FULLBINEXT): $(Q3OBJ) $(Q3ROBJ) $(JPGOBJ) $(LIBSDLMAIN)
@@ -2295,10 +2371,10 @@ $(B)/$(CLIENTBIN)_opengl2$(FULLBINEXT): $(Q3OBJ) $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(J
 		-o $@ $(Q3OBJ) $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) \
 		$(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
 
-$(B)/$(CLIENTBIN)_metal$(FULLBINEXT): $(Q3OBJ) $(Q3RMOBJ) $(JPGOBJ) $(LIBSDLMAIN)
+$(B)/$(CLIENTBIN)_metal$(FULLBINEXT): $(Q3OBJ) $(Q3RMOBJ) $(Q3RMSTRINGOBJ) $(JPGOBJ) $(LIBSDLMAIN)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
-		-o $@ $(Q3OBJ) $(Q3RMOBJ) $(JPGOBJ) \
+		-o $@ $(Q3OBJ) $(Q3RMOBJ) $(Q3RMSTRINGOBJ) $(JPGOBJ) \
 		$(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
 endif
 
@@ -2829,6 +2905,12 @@ $(B)/renderergl2/%.o: $(RCOMMONDIR)/%.c
 $(B)/renderergl2/%.o: $(RGL2DIR)/%.c
 	$(DO_REF_CC)
 
+$(B)/renderermetal/glsl/%.c: $(RMETDIR)/glsl/%.glsl $(STRINGIFY)
+	$(DO_REF_STR)
+
+$(B)/renderermetal/glsl/%.o: $(B)/renderermetal/glsl/%.c
+	$(DO_REF_CC)
+
 $(B)/renderermetal/%.o: $(RCOMMONDIR)/%.c
 	$(DO_REF_CC)
 
@@ -2959,11 +3041,11 @@ $(B)/$(MISSIONPACK)/qcommon/%.asm: $(CMDIR)/%.c $(Q3LCC)
 # MISC
 #############################################################################
 
-OBJ = $(Q3OBJ) $(Q3ROBJ) $(Q3R2OBJ) $(Q3DOBJ) $(JPGOBJ) \
+OBJ = $(Q3OBJ) $(Q3ROBJ) $(Q3R2OBJ) $(Q3RMOBJ) $(Q3DOBJ) $(JPGOBJ) \
   $(MPGOBJ) $(Q3GOBJ) $(Q3CGOBJ) $(MPCGOBJ) $(Q3UIOBJ) $(MPUIOBJ) \
   $(MPGVMOBJ) $(Q3GVMOBJ) $(Q3CGVMOBJ) $(MPCGVMOBJ) $(Q3UIVMOBJ) $(MPUIVMOBJ)
 TOOLSOBJ = $(LBURGOBJ) $(Q3CPPOBJ) $(Q3RCCOBJ) $(Q3LCCOBJ) $(Q3ASMOBJ)
-STRINGOBJ = $(Q3R2STRINGOBJ)
+STRINGOBJ = $(Q3R2STRINGOBJ) $(Q3RMSTRINGOBJ)
 
 
 copyfiles: release
