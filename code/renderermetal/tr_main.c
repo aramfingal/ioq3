@@ -1752,6 +1752,7 @@ or a mirror / remote location
 */
 void R_RenderView(viewParms_t *parms)
 {
+	// return;
 	int firstDrawSurf;
 	int numDrawSurfs;
 

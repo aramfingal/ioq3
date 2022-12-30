@@ -35,6 +35,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../sys/sys_local.h"
 #include "sdl_icon.h"
 
+// #include "Metal.hpp"
+
 typedef enum
 {
 	RSERR_OK,
@@ -47,6 +49,7 @@ typedef enum
 
 SDL_Window *SDL_window = NULL;
 static SDL_GLContext SDL_glContext = NULL;
+static SDL_MetalView SDL_metalView = NULL;
 
 cvar_t *r_allowSoftwareGL; // Don't abort out if a hardware visual can't be obtained
 cvar_t *r_allowResize; // make window resizable
@@ -118,6 +121,7 @@ void GLimp_LogComment( char *comment )
 ===============
 GLimp_CompareModes
 ===============
+***internal***
 */
 static int GLimp_CompareModes( const void *a, const void *b )
 {
@@ -145,6 +149,7 @@ static int GLimp_CompareModes( const void *a, const void *b )
 ===============
 GLimp_DetectAvailableModes
 ===============
+***internal***
 */
 static void GLimp_DetectAvailableModes(void)
 {
@@ -236,6 +241,7 @@ GLimp_GetProcAddresses
 
 Get addresses for OpenGL functions.
 ===============
+***internal***
 */
 static qboolean GLimp_GetProcAddresses( qboolean fixedFunction ) {
 	qboolean success = qtrue;
@@ -328,6 +334,7 @@ GLimp_ClearProcAddresses
 
 Clear addresses for OpenGL functions.
 ===============
+***internal***
 */
 static void GLimp_ClearProcAddresses( void ) {
 #define GLE( ret, name, ... ) qgl##name = NULL;
@@ -366,21 +373,22 @@ static void GLimp_ClearProcAddresses( void ) {
 ===============
 GLimp_SetMode
 ===============
+***internal***
 */
 static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qboolean fixedFunction)
 {
 	const char *glstring;
 	int perChannelColorBits;
-	int colorBits, depthBits, stencilBits;
+	int colorBits, depthBits, stencilBits; 
 	int samples;
 	int i = 0;
 	SDL_Surface *icon = NULL;
-	Uint32 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
+	Uint32 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_METAL;
 	SDL_DisplayMode desktopMode;
 	int display = 0;
 	int x = SDL_WINDOWPOS_UNDEFINED, y = SDL_WINDOWPOS_UNDEFINED;
 
-	ri.Printf( PRINT_ALL, "Initializing OpenGL display\n");
+	ri.Printf( PRINT_ALL, "Initializing Metal display\n");
 
 	if ( r_allowResize->integer )
 		flags |= SDL_WINDOW_RESIZABLE;
@@ -403,6 +411,7 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 	// If a window exists, note its display index
 	if( SDL_window != NULL )
 	{
+		ri.Printf(PRINT_ALL, "SDL_window != NULL\n");
 		display = SDL_GetWindowDisplayIndex( SDL_window );
 		if( display < 0 )
 		{
@@ -470,6 +479,7 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 	{
 		SDL_GetWindowPosition( SDL_window, &x, &y );
 		ri.Printf( PRINT_DEVELOPER, "Existing window at %dx%d before being destroyed\n", x, y );
+		ri.Printf( PRINT_ALL, "Existing window at %dx%d before being destroyed\n", x, y );
 		SDL_DestroyWindow( SDL_window );
 		SDL_window = NULL;
 	}
@@ -571,27 +581,27 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 		SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 1);
 #endif
 
-		SDL_GL_SetAttribute( SDL_GL_RED_SIZE, perChannelColorBits );
-		SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, perChannelColorBits );
-		SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, perChannelColorBits );
-		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, testDepthBits );
-		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, testStencilBits );
+		// SDL_GL_SetAttribute( SDL_GL_RED_SIZE, perChannelColorBits );
+		// SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, perChannelColorBits );
+		// SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, perChannelColorBits );
+		// SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, testDepthBits );
+		// SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, testStencilBits );
 
-		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, samples ? 1 : 0 );
-		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, samples );
+		// SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, samples ? 1 : 0 );
+		// SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, samples );
 
-		if(r_stereoEnabled->integer)
-		{
-			glConfig.stereoEnabled = qtrue;
-			SDL_GL_SetAttribute(SDL_GL_STEREO, 1);
-		}
-		else
-		{
-			glConfig.stereoEnabled = qfalse;
-			SDL_GL_SetAttribute(SDL_GL_STEREO, 0);
-		}
+		// if(r_stereoEnabled->integer)
+		// {
+		// 	glConfig.stereoEnabled = qtrue;
+		// 	SDL_GL_SetAttribute(SDL_GL_STEREO, 1);
+		// }
+		// else
+		// {
+		// 	glConfig.stereoEnabled = qfalse;
+		// 	SDL_GL_SetAttribute(SDL_GL_STEREO, 0);
+		// }
 		
-		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+		// SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 #if 0 // if multisampling is enabled on X11, this causes create window to fail.
 		// If not allowing software GL, demand accelerated
@@ -633,6 +643,7 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 
 		if (!fixedFunction)
 		{
+			ri.Printf(PRINT_ALL, "fixedFunction is false\n");
 			int profileMask, majorVersion, minorVersion;
 			SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profileMask);
 			SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &majorVersion);
@@ -642,9 +653,10 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-			if ((SDL_glContext = SDL_GL_CreateContext(SDL_window)) == NULL)
+			// if ((SDL_glContext = SDL_GL_CreateContext(SDL_window)) == NULL)
+			if ((SDL_metalView = SDL_Metal_CreateView( SDL_window )) == NULL)
 			{
-				ri.Printf(PRINT_ALL, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());
+				ri.Printf(PRINT_ALL, "SDL_Metal_CreateView failed: %s\n", SDL_GetError());
 				ri.Printf(PRINT_ALL, "Reverting to default context\n");
 
 				SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
@@ -655,31 +667,31 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 			{
 				const char *renderer;
 
-				ri.Printf(PRINT_ALL, "SDL_GL_CreateContext succeeded.\n");
+				ri.Printf(PRINT_ALL, "SDL_Metal_CreateView succeeded.\n");
 
-				if ( GLimp_GetProcAddresses( fixedFunction ) )
-				{
-					renderer = (const char *)qglGetString(GL_RENDERER);
-				}
-				else
-				{
-					ri.Printf( PRINT_ALL, "GLimp_GetProcAddresses() failed for OpenGL 3.2 core context\n" );
-					renderer = NULL;
-				}
+				// if ( GLimp_GetProcAddresses( fixedFunction ) )
+				// {
+				// 	renderer = (const char *)qglGetString(GL_RENDERER);
+				// }
+				// else
+				// {
+				// 	ri.Printf( PRINT_ALL, "GLimp_GetProcAddresses() failed for OpenGL 3.2 core context\n" );
+				// 	renderer = NULL;
+				// }
 
-				if (!renderer || (strstr(renderer, "Software Renderer") || strstr(renderer, "Software Rasterizer")))
-				{
-					if ( renderer )
-						ri.Printf(PRINT_ALL, "GL_RENDERER is %s, rejecting context\n", renderer);
+				// if (!renderer || (strstr(renderer, "Software Renderer") || strstr(renderer, "Software Rasterizer")))
+				// {
+				// 	if ( renderer )
+				// 		ri.Printf(PRINT_ALL, "GL_RENDERER is %s, rejecting context\n", renderer);
 
-					GLimp_ClearProcAddresses();
-					SDL_GL_DeleteContext(SDL_glContext);
-					SDL_glContext = NULL;
+				// 	GLimp_ClearProcAddresses();
+				// 	SDL_GL_DeleteContext(SDL_glContext);
+				// 	SDL_glContext = NULL;
 
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, majorVersion);
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minorVersion);
-				}
+				// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
+				// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, majorVersion);
+				// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minorVersion);
+				// }
 			}
 		}
 		else
@@ -687,9 +699,12 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 			SDL_glContext = NULL;
 		}
 
-		if ( !SDL_glContext )
+		// if ( !SDL_glContext )
+		if ( !SDL_metalView )
 		{
-			if( ( SDL_glContext = SDL_GL_CreateContext( SDL_window ) ) == NULL )
+			ri.Printf(PRINT_ALL, "SDL_metalView was NULL\n");
+			// if( ( SDL_glContext = SDL_GL_CreateContext( SDL_window ) ) == NULL )
+			if ( ( SDL_metalView = SDL_Metal_CreateView( SDL_window ) ) == NULL )
 			{
 				ri.Printf( PRINT_DEVELOPER, "SDL_GL_CreateContext failed: %s\n", SDL_GetError( ) );
 				SDL_DestroyWindow( SDL_window );
@@ -697,26 +712,27 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 				continue;
 			}
 
-			if ( !GLimp_GetProcAddresses( fixedFunction ) )
-			{
-				ri.Printf( PRINT_ALL, "GLimp_GetProcAddresses() failed\n" );
-				GLimp_ClearProcAddresses();
-				SDL_GL_DeleteContext( SDL_glContext );
-				SDL_glContext = NULL;
-				SDL_DestroyWindow( SDL_window );
-				SDL_window = NULL;
-				continue;
-			}
+			// if ( !GLimp_GetProcAddresses( fixedFunction ) )
+			// {
+			// 	ri.Printf(PRINT_ALL, "in this thing here **********************\n");
+			// 	ri.Printf( PRINT_ALL, "GLimp_GetProcAddresses() failed\n" );
+			// 	GLimp_ClearProcAddresses();
+			// 	SDL_GL_DeleteContext( SDL_glContext );
+			// 	SDL_glContext = NULL;
+			// 	SDL_DestroyWindow( SDL_window );
+			// 	SDL_window = NULL;
+			// 	continue;
+			// }
 		}
 
 		qglClearColor( 0, 0, 0, 1 );
-		qglClear( GL_COLOR_BUFFER_BIT );
-		SDL_GL_SwapWindow( SDL_window );
+		// qglClear( GL_COLOR_BUFFER_BIT );
+		// SDL_GL_SwapWindow( SDL_window );
 
-		if( SDL_GL_SetSwapInterval( r_swapInterval->integer ) == -1 )
-		{
-			ri.Printf( PRINT_DEVELOPER, "SDL_GL_SetSwapInterval failed: %s\n", SDL_GetError( ) );
-		}
+		// if( SDL_GL_SetSwapInterval( r_swapInterval->integer ) == -1 )
+		// {
+		// 	ri.Printf( PRINT_DEVELOPER, "SDL_GL_SetSwapInterval failed: %s\n", SDL_GetError( ) );
+		// }
 
 		SDL_GL_GetAttribute( SDL_GL_RED_SIZE, &realColorBits[0] );
 		SDL_GL_GetAttribute( SDL_GL_GREEN_SIZE, &realColorBits[1] );
@@ -739,10 +755,12 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 		return RSERR_INVALID_MODE;
 	}
 
-	GLimp_DetectAvailableModes();
+	// GLimp_DetectAvailableModes();
 
-	glstring = (char *) qglGetString (GL_RENDERER);
-	ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
+	// glstring = (char *) qglGetString (GL_RENDERER);
+	// ri.Printf( PRINT_ALL, "GL_RENDERER: %s\n", glstring );
+
+		ri.Printf( PRINT_ALL, "***********MADE IT THIS FAR************\n");
 
 	return RSERR_OK;
 }
@@ -751,6 +769,7 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 ===============
 GLimp_StartDriverAndSetMode
 ===============
+***internal***
 */
 static qboolean GLimp_StartDriverAndSetMode(int mode, qboolean fullscreen, qboolean noborder, qboolean gl3Core)
 {
@@ -781,6 +800,10 @@ static qboolean GLimp_StartDriverAndSetMode(int mode, qboolean fullscreen, qbool
 	
 	err = GLimp_SetMode(mode, fullscreen, noborder, gl3Core);
 
+	
+
+		ri.Printf( PRINT_ALL, "***********MADE IT THIS FAR AGAIN! (%d)************\n", err);
+
 	switch ( err )
 	{
 		case RSERR_INVALID_FULLSCREEN:
@@ -801,6 +824,7 @@ static qboolean GLimp_StartDriverAndSetMode(int mode, qboolean fullscreen, qbool
 ===============
 GLimp_InitExtensions
 ===============
+***internal***
 */
 static void GLimp_InitExtensions( qboolean fixedFunction )
 {
@@ -1031,6 +1055,8 @@ void GLimp_Init( qboolean fixedFunction )
 	ri.Error( ERR_FATAL, "GLimp_Init() - could not load OpenGL subsystem" );
 
 success:
+	ri.Printf( PRINT_ALL, "Glimp_Init( )\n" );
+	return;
 	// These values force the UI to disable driver selection
 	glConfig.driverType = GLDRV_ICD;
 	glConfig.hardwareType = GLHW_GENERIC;
